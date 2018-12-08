@@ -385,7 +385,7 @@ namespace Microsoft.Rest.Azure.OData
                 {
                     _currentExpressionString.Append(formattedString.ToLowerInvariant());
                 }
-                else if (val is TimeSpan)
+                else if (val is TimeSpan || val is DateTime || val is Guid)
                 {
                     _currentExpressionString.Append(formattedString);
                 }

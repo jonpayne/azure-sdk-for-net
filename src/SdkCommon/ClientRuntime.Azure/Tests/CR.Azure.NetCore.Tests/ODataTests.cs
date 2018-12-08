@@ -25,10 +25,10 @@ namespace Microsoft.Rest.ClientRuntime.Azure.Test
             var result = FilterString.Generate<Param1>(p => p.Foo == "foo" || p.Val < 20 || p.Foo == "bar" && p.Val == null &&
                 p.Date > date2 &&
                 p.Date < date && p.Values.Contains("x"), false);
-            string time1 = Uri.EscapeDataString("2004-11-05T00:00:00Z");
-            string time2 = Uri.EscapeDataString("2013-11-05T00:00:00Z");
-            string expected = string.Format("foo eq 'foo' or Val lt 20 or foo eq 'bar' and Val eq null and d gt '{0}' " +
-                "and d lt '{1}' and vals/any(c: c eq 'x')", time1, time2);
+            string time1 = "2004-11-05T00:00:00Z";
+            string time2 = "2013-11-05T00:00:00Z";
+            string expected = string.Format("foo eq 'foo' or Val lt 20 or foo eq 'bar' and Val eq null and d gt {0} " +
+                "and d lt {1} and vals/any(c: c eq 'x')", time1, time2);
             Assert.Equal(expected, result);
         }
 
@@ -217,7 +217,7 @@ namespace Microsoft.Rest.ClientRuntime.Azure.Test
         public void DefaultDateTimeProducesProperStringInODataFilter()
         {
             var result = FilterString.Generate<Param1>(p => p.Date2 == new DateTime(2012, 5, 1, 11, 5, 1, DateTimeKind.Utc));
-            Assert.Equal("Date2 eq '" + Uri.EscapeDataString("2012-05-01T11:05:01Z") + "'", result);
+            Assert.Equal("Date2 eq 2012-05-01T11:05:01Z", result);
         }
 
         [Fact]
@@ -226,7 +226,7 @@ namespace Microsoft.Rest.ClientRuntime.Azure.Test
             var localDate = new DateTime(2012, 5, 1, 11, 5, 1, DateTimeKind.Local);
             var utcDate = localDate.ToUniversalTime();
             var result = FilterString.Generate<Param1>(p => p.Date2 == localDate);
-            Assert.Equal("Date2 eq '" + Uri.EscapeDataString(utcDate.ToString("yyyy-MM-ddTHH:mm:ssZ")) + "'", result);
+            Assert.Equal("Date2 eq " + utcDate.ToString("yyyy-MM-ddTHH:mm:ssZ"), result);
         }
 
         [Fact]
@@ -354,11 +354,20 @@ namespace Microsoft.Rest.ClientRuntime.Azure.Test
  
             Assert.Equal(filterString, "timeGrain eq duration'PT5M'");
         }
- 
+
+        [Fact]
+        public void ODataQuerySupportsGuid()
+        {
+            var guid = Guid.NewGuid();
+            var filterString = FilterString.Generate<Parameters>(parameters => parameters.Id == guid);
+            Console.WriteLine(filterString);
+
+            Assert.Equal(filterString, "id eq " + guid.ToString());
+        }
+
         [Fact]
         public void ODataQuerySupportsEnum()
         {
-            var timeSpan = TimeSpan.FromMinutes(5);
             var filterString = FilterString.Generate<Parameters>(parameters => parameters.EventChannels == EventChannels.Admin);
             Console.WriteLine(filterString);
 
@@ -390,6 +399,9 @@ namespace Microsoft.Rest.ClientRuntime.Azure.Test
 
     public class Parameters
     {
+        [JsonProperty("id")]
+        public Guid? Id { get; set; }
+
         [JsonProperty("startTime")]
         public DateTime? StartTime { get; set; }
 
@@ -401,7 +413,6 @@ namespace Microsoft.Rest.ClientRuntime.Azure.Test
 
         [JsonProperty("timeGrain")]
         public TimeSpan? TimeGrain { get; set; }
-
     }
 
     public class Param1
